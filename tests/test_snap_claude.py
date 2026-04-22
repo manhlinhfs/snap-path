@@ -1,4 +1,5 @@
 # tests/test_snap_claude.py
+import json
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -146,3 +147,49 @@ class TestLoadIconImages:
         active, paused = snap_claude.load_icon_images()
         assert isinstance(active, Image.Image)
         assert active.size == (64, 64)
+
+
+class TestLoadConfig:
+    def test_returns_defaults_when_file_missing(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(snap_claude, "CONFIG_PATH", tmp_path / "config.json")
+        config = snap_claude.load_config()
+        assert config["hotkey"] == "ctrl+shift+x"
+        assert "save_dir" in config
+
+    def test_reads_values_from_file(self, tmp_path, monkeypatch):
+        cfg_path = tmp_path / "config.json"
+        cfg_path.write_text('{"save_dir": "C:/custom", "hotkey": "ctrl+alt+z"}', encoding="utf-8")
+        monkeypatch.setattr(snap_claude, "CONFIG_PATH", cfg_path)
+        config = snap_claude.load_config()
+        assert config["save_dir"] == "C:/custom"
+        assert config["hotkey"] == "ctrl+alt+z"
+
+    def test_merges_defaults_for_missing_keys(self, tmp_path, monkeypatch):
+        cfg_path = tmp_path / "config.json"
+        cfg_path.write_text('{"hotkey": "ctrl+alt+z"}', encoding="utf-8")
+        monkeypatch.setattr(snap_claude, "CONFIG_PATH", cfg_path)
+        config = snap_claude.load_config()
+        assert "save_dir" in config
+        assert config["hotkey"] == "ctrl+alt+z"
+
+    def test_returns_defaults_on_malformed_json(self, tmp_path, monkeypatch):
+        cfg_path = tmp_path / "config.json"
+        cfg_path.write_text("not json!!!!", encoding="utf-8")
+        monkeypatch.setattr(snap_claude, "CONFIG_PATH", cfg_path)
+        config = snap_claude.load_config()
+        assert config["hotkey"] == "ctrl+shift+x"
+
+
+class TestSaveConfig:
+    def test_writes_correct_json(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(snap_claude, "CONFIG_PATH", tmp_path / "config.json")
+        snap_claude.save_config({"save_dir": "C:/test", "hotkey": "ctrl+alt+z"})
+        data = json.loads((tmp_path / "config.json").read_text(encoding="utf-8"))
+        assert data["save_dir"] == "C:/test"
+        assert data["hotkey"] == "ctrl+alt+z"
+
+    def test_creates_parent_dir_if_missing(self, tmp_path, monkeypatch):
+        cfg_path = tmp_path / "sub" / "config.json"
+        monkeypatch.setattr(snap_claude, "CONFIG_PATH", cfg_path)
+        snap_claude.save_config({"save_dir": "C:/test", "hotkey": "ctrl+alt+z"})
+        assert cfg_path.exists()

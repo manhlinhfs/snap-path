@@ -16,6 +16,7 @@ import win32clipboard
 import win32con
 
 SAVE_DIR = Path.home() / "snap-claude"
+CONFIG_PATH = Path.home() / "snap-claude" / "config.json"
 
 
 def resource_path(filename: str) -> Path:
@@ -31,6 +32,23 @@ def load_icon_images() -> tuple[Image.Image, Image.Image]:
         img = make_tray_icon_image().convert("RGBA")
     paused = img.convert("LA").convert("RGBA")
     return img, paused
+
+
+def load_config() -> dict:
+    defaults = {
+        "save_dir": str(Path.home() / "snap-claude"),
+        "hotkey": "ctrl+shift+x",
+    }
+    try:
+        data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        return {**defaults, **data}
+    except Exception:
+        return defaults.copy()
+
+
+def save_config(config: dict) -> None:
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CONFIG_PATH.write_text(json.dumps(config, indent=2), encoding="utf-8")
 
 
 def get_save_path(dt: datetime | None = None) -> Path:
