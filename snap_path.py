@@ -15,8 +15,8 @@ from PIL import Image, ImageDraw, ImageGrab
 import win32clipboard
 import win32con
 
-SAVE_DIR = Path.home() / "snap-claude"
-CONFIG_PATH = Path.home() / "snap-claude" / "config.json"
+SAVE_DIR = Path.home() / "snap-path"
+CONFIG_PATH = Path.home() / "snap-path" / "config.json"
 
 
 def resource_path(filename: str) -> Path:
@@ -36,7 +36,7 @@ def load_icon_images() -> tuple[Image.Image, Image.Image]:
 
 def load_config() -> dict:
     defaults = {
-        "save_dir": str(Path.home() / "snap-claude"),
+        "save_dir": str(Path.home() / "snap-path"),
         "hotkey": "ctrl+shift+x",
     }
     try:
@@ -63,11 +63,11 @@ def toggle_pause(
     if paused_event.is_set():
         paused_event.clear()
         icon.icon = icon_active
-        icon.title = "Snap Claude — Active"
+        icon.title = "SnapPath — Active"
     else:
         paused_event.set()
         icon.icon = icon_paused
-        icon.title = "Snap Claude — Paused"
+        icon.title = "SnapPath — Paused"
     icon.update_menu()
 
 
@@ -105,7 +105,7 @@ def open_settings(
         global _settings_open, SAVE_DIR
         _settings_open = True
         win = tk.Tk()
-        win.title("Snap Claude Settings")
+        win.title("SnapPath Settings")
         win.resizable(False, False)
 
         tk.Label(win, text="Save folder:").grid(row=0, column=0, sticky="w", padx=8, pady=(8, 2))
@@ -215,7 +215,7 @@ def clipboard_watcher(stop_event: threading.Event, paused_event: threading.Event
                         path = save_image(img)
                         set_clipboard_text(str(path))
             except Exception as e:
-                print(f"snap-claude error: {e}", file=sys.stderr)
+                print(f"snap-path error: {e}", file=sys.stderr)
         time.sleep(0.5)
 
 
@@ -259,7 +259,7 @@ def main() -> None:
         ),
         pystray.MenuItem("Exit", on_exit),
     )
-    tray_icon = pystray.Icon("snap_claude", icon_active, "Snap Claude — Active", menu)
+    tray_icon = pystray.Icon("snap_path", icon_active, "SnapPath — Active", menu)
     icon_ref[0] = tray_icon
     tray_icon.run()
 
