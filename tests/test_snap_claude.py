@@ -16,9 +16,9 @@ def make_img(color=(255, 0, 0), size=(10, 10)) -> Image.Image:
 
 class TestGetSavePath:
     def test_uses_timestamp_format(self):
-        dt = datetime(2026, 4, 22, 14, 30, 55)
+        dt = datetime(2026, 4, 22, 14, 30, 55, 123456)
         path = snap_claude.get_save_path(dt)
-        assert path.name == "screenshot_20260422_143055.png"
+        assert path.name == "screenshot_20260422_143055_123456.png"
 
     def test_parent_is_save_dir(self):
         path = snap_claude.get_save_path(datetime(2026, 1, 1, 0, 0, 0))

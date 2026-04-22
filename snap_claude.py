@@ -16,7 +16,7 @@ SAVE_DIR = Path.home() / "snap-claude"
 def get_save_path(dt: datetime | None = None) -> Path:
     if dt is None:
         dt = datetime.now()
-    return SAVE_DIR / f"screenshot_{dt.strftime('%Y%m%d_%H%M%S')}.png"
+    return SAVE_DIR / f"screenshot_{dt.strftime('%Y%m%d_%H%M%S_%f')}.png"
 
 
 def image_hash(img: Image.Image) -> str:
@@ -71,8 +71,8 @@ def clipboard_watcher(stop_event: threading.Event) -> None:
                     last_hash = h
                     path = save_image(img)
                     set_clipboard_text(str(path))
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"snap-claude error: {e}", file=__import__('sys').stderr)
         time.sleep(0.5)
 
 
