@@ -1,16 +1,36 @@
 import hashlib
+import json
 import subprocess
+import sys
 import threading
 import time
+import tkinter as tk
 from datetime import datetime
 from pathlib import Path
+from tkinter import filedialog, messagebox
 
+import keyboard
 import pystray
 from PIL import Image, ImageDraw, ImageGrab
 import win32clipboard
 import win32con
 
 SAVE_DIR = Path.home() / "snap-claude"
+
+
+def resource_path(filename: str) -> Path:
+    base = Path(getattr(sys, "_MEIPASS", None) or Path(__file__).parent)
+    return base / filename
+
+
+def load_icon_images() -> tuple[Image.Image, Image.Image]:
+    path = resource_path("logo.png")
+    if path.exists():
+        img = Image.open(path).convert("RGBA").resize((64, 64), Image.LANCZOS)
+    else:
+        img = make_tray_icon_image().convert("RGBA")
+    paused = img.convert("LA").convert("RGBA")
+    return img, paused
 
 
 def get_save_path(dt: datetime | None = None) -> Path:

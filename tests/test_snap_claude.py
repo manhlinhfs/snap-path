@@ -1,4 +1,5 @@
 # tests/test_snap_claude.py
+import sys
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch, MagicMock
@@ -111,3 +112,37 @@ class TestSetClipboardText:
         m_set.assert_called_once_with(
             win32con.CF_UNICODETEXT, "C:\\snap-claude\\test.png"
         )
+
+
+class TestResourcePath:
+    def test_returns_path_relative_to_script_without_meipass(self, monkeypatch):
+        monkeypatch.delattr(sys, "_MEIPASS", raising=False)
+        result = snap_claude.resource_path("logo.png")
+        assert result == Path(snap_claude.__file__).parent / "logo.png"
+
+    def test_returns_path_under_meipass_when_set(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(sys, "_MEIPASS", str(tmp_path), raising=False)
+        result = snap_claude.resource_path("logo.png")
+        assert result == tmp_path / "logo.png"
+
+
+class TestLoadIconImages:
+    def test_returns_two_pil_images(self):
+        active, paused = snap_claude.load_icon_images()
+        assert isinstance(active, Image.Image)
+        assert isinstance(paused, Image.Image)
+
+    def test_both_icons_are_64x64(self):
+        active, paused = snap_claude.load_icon_images()
+        assert active.size == (64, 64)
+        assert paused.size == (64, 64)
+
+    def test_paused_is_visually_different_from_active(self):
+        active, paused = snap_claude.load_icon_images()
+        assert snap_claude.image_hash(active.convert("RGB")) != snap_claude.image_hash(paused.convert("RGB"))
+
+    def test_falls_back_when_logo_missing(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(sys, "_MEIPASS", str(tmp_path), raising=False)
+        active, paused = snap_claude.load_icon_images()
+        assert isinstance(active, Image.Image)
+        assert active.size == (64, 64)
