@@ -21,3 +21,10 @@ def get_save_path(dt: datetime | None = None) -> Path:
 
 def image_hash(img: Image.Image) -> str:
     return hashlib.md5(img.tobytes()).hexdigest()
+
+
+def save_image(img: Image.Image) -> Path:
+    SAVE_DIR.mkdir(parents=True, exist_ok=True)
+    path = get_save_path()
+    img.save(path, format="PNG")
+    return path

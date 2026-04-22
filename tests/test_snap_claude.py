@@ -44,3 +44,26 @@ class TestImageHash:
         h = snap_claude.image_hash(make_img())
         assert len(h) == 32
         assert all(c in "0123456789abcdef" for c in h)
+
+
+class TestSaveImage:
+    def test_saves_png_file_in_save_dir(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(snap_claude, "SAVE_DIR", tmp_path)
+        path = snap_claude.save_image(make_img())
+        assert path.exists()
+        assert path.suffix == ".png"
+        assert path.parent == tmp_path
+
+    def test_saved_file_is_valid_image(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(snap_claude, "SAVE_DIR", tmp_path)
+        img = make_img(color=(0, 128, 255), size=(20, 20))
+        path = snap_claude.save_image(img)
+        loaded = Image.open(path)
+        assert loaded.size == (20, 20)
+
+    def test_creates_save_dir_if_missing(self, tmp_path, monkeypatch):
+        new_dir = tmp_path / "new_subdir"
+        monkeypatch.setattr(snap_claude, "SAVE_DIR", new_dir)
+        assert not new_dir.exists()
+        snap_claude.save_image(make_img())
+        assert new_dir.exists()
