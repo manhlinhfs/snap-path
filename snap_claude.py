@@ -28,3 +28,20 @@ def save_image(img: Image.Image) -> Path:
     path = get_save_path()
     img.save(path, format="PNG")
     return path
+
+
+def get_clipboard_image() -> Image.Image | None:
+    try:
+        result = ImageGrab.grabclipboard()
+        return result if isinstance(result, Image.Image) else None
+    except Exception:
+        return None
+
+
+def set_clipboard_text(text: str) -> None:
+    win32clipboard.OpenClipboard()
+    try:
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardData(win32con.CF_UNICODETEXT, text)
+    finally:
+        win32clipboard.CloseClipboard()

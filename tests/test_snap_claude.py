@@ -67,3 +67,47 @@ class TestSaveImage:
         assert not new_dir.exists()
         snap_claude.save_image(make_img())
         assert new_dir.exists()
+
+
+class TestGetClipboardImage:
+    def test_returns_image_when_clipboard_has_image(self):
+        img = make_img()
+        with patch("snap_claude.ImageGrab.grabclipboard", return_value=img):
+            result = snap_claude.get_clipboard_image()
+        assert result is img
+
+    def test_returns_none_when_clipboard_has_file_list(self):
+        with patch("snap_claude.ImageGrab.grabclipboard", return_value=["file.txt"]):
+            result = snap_claude.get_clipboard_image()
+        assert result is None
+
+    def test_returns_none_when_clipboard_is_empty(self):
+        with patch("snap_claude.ImageGrab.grabclipboard", return_value=None):
+            result = snap_claude.get_clipboard_image()
+        assert result is None
+
+    def test_returns_none_on_exception(self):
+        with patch("snap_claude.ImageGrab.grabclipboard", side_effect=OSError("fail")):
+            result = snap_claude.get_clipboard_image()
+        assert result is None
+
+
+class TestSetClipboardText:
+    def test_opens_and_closes_clipboard(self):
+        with patch("snap_claude.win32clipboard.OpenClipboard") as m_open, \
+             patch("snap_claude.win32clipboard.EmptyClipboard"), \
+             patch("snap_claude.win32clipboard.SetClipboardData"), \
+             patch("snap_claude.win32clipboard.CloseClipboard") as m_close:
+            snap_claude.set_clipboard_text("C:\\snap-claude\\test.png")
+        m_open.assert_called_once()
+        m_close.assert_called_once()
+
+    def test_sets_unicode_text(self):
+        with patch("snap_claude.win32clipboard.OpenClipboard"), \
+             patch("snap_claude.win32clipboard.EmptyClipboard"), \
+             patch("snap_claude.win32clipboard.SetClipboardData") as m_set, \
+             patch("snap_claude.win32clipboard.CloseClipboard"):
+            snap_claude.set_clipboard_text("C:\\snap-claude\\test.png")
+        m_set.assert_called_once_with(
+            win32con.CF_UNICODETEXT, "C:\\snap-claude\\test.png"
+        )
