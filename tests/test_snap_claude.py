@@ -1,6 +1,7 @@
 # tests/test_snap_claude.py
 import json
 import sys
+import threading
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch, MagicMock
@@ -193,3 +194,70 @@ class TestSaveConfig:
         monkeypatch.setattr(snap_claude, "CONFIG_PATH", cfg_path)
         snap_claude.save_config({"save_dir": "C:/test", "hotkey": "ctrl+alt+z"})
         assert cfg_path.exists()
+
+
+class TestTogglePause:
+    def test_sets_paused_event_when_active(self):
+        paused_event = threading.Event()
+        icon = MagicMock()
+        snap_claude.toggle_pause(paused_event, icon, make_img(), make_img())
+        assert paused_event.is_set()
+
+    def test_clears_paused_event_when_paused(self):
+        paused_event = threading.Event()
+        paused_event.set()
+        icon = MagicMock()
+        snap_claude.toggle_pause(paused_event, icon, make_img(), make_img())
+        assert not paused_event.is_set()
+
+    def test_sets_icon_to_paused_image(self):
+        paused_event = threading.Event()
+        icon = MagicMock()
+        active_img = make_img(color=(0, 0, 255))
+        paused_img = make_img(color=(128, 128, 128))
+        snap_claude.toggle_pause(paused_event, icon, active_img, paused_img)
+        assert icon.icon is paused_img
+
+    def test_sets_icon_to_active_image_on_resume(self):
+        paused_event = threading.Event()
+        paused_event.set()
+        icon = MagicMock()
+        active_img = make_img(color=(0, 0, 255))
+        paused_img = make_img(color=(128, 128, 128))
+        snap_claude.toggle_pause(paused_event, icon, active_img, paused_img)
+        assert icon.icon is active_img
+
+    def test_sets_title_to_paused(self):
+        paused_event = threading.Event()
+        icon = MagicMock()
+        snap_claude.toggle_pause(paused_event, icon, make_img(), make_img())
+        assert icon.title == "Snap Claude — Paused"
+
+    def test_sets_title_to_active_on_resume(self):
+        paused_event = threading.Event()
+        paused_event.set()
+        icon = MagicMock()
+        snap_claude.toggle_pause(paused_event, icon, make_img(), make_img())
+        assert icon.title == "Snap Claude — Active"
+
+
+class TestRegisterHotkey:
+    def test_returns_true_on_success(self, monkeypatch):
+        monkeypatch.setattr(snap_claude, "_current_hotkey", None)
+        with patch("snap_claude.keyboard.add_hotkey"), \
+             patch("snap_claude.keyboard.remove_hotkey"):
+            result = snap_claude.register_hotkey("ctrl+shift+x", lambda: None)
+        assert result is True
+
+    def test_returns_false_on_invalid_hotkey(self, monkeypatch):
+        monkeypatch.setattr(snap_claude, "_current_hotkey", None)
+        with patch("snap_claude.keyboard.add_hotkey", side_effect=ValueError("bad")):
+            result = snap_claude.register_hotkey("!!!bad!!!", lambda: None)
+        assert result is False
+
+    def test_removes_previous_hotkey_before_registering(self, monkeypatch):
+        monkeypatch.setattr(snap_claude, "_current_hotkey", "ctrl+shift+x")
+        with patch("snap_claude.keyboard.remove_hotkey") as mock_remove, \
+             patch("snap_claude.keyboard.add_hotkey"):
+            snap_claude.register_hotkey("ctrl+shift+z", lambda: None)
+        mock_remove.assert_called_once_with("ctrl+shift+x")

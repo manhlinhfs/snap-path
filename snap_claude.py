@@ -51,6 +51,42 @@ def save_config(config: dict) -> None:
     CONFIG_PATH.write_text(json.dumps(config, indent=2), encoding="utf-8")
 
 
+_current_hotkey: str | None = None
+
+
+def toggle_pause(
+    paused_event: threading.Event,
+    icon: pystray.Icon,
+    icon_active: Image.Image,
+    icon_paused: Image.Image,
+) -> None:
+    if paused_event.is_set():
+        paused_event.clear()
+        icon.icon = icon_active
+        icon.title = "Snap Claude — Active"
+    else:
+        paused_event.set()
+        icon.icon = icon_paused
+        icon.title = "Snap Claude — Paused"
+    icon.update_menu()
+
+
+def register_hotkey(hotkey_str: str, callback) -> bool:
+    global _current_hotkey
+    try:
+        if _current_hotkey:
+            try:
+                keyboard.remove_hotkey(_current_hotkey)
+            except Exception:
+                pass
+            _current_hotkey = None
+        keyboard.add_hotkey(hotkey_str, callback)
+        _current_hotkey = hotkey_str
+        return True
+    except Exception:
+        return False
+
+
 def get_save_path(dt: datetime | None = None) -> Path:
     if dt is None:
         dt = datetime.now()
