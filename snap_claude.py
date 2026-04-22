@@ -127,7 +127,7 @@ def open_settings(
             global SAVE_DIR
             new_dir = save_var.get().strip()
             new_hotkey = hotkey_var.get().strip()
-            if new_hotkey != config["hotkey"]:
+            if new_hotkey != config["hotkey"] or _current_hotkey is None:
                 if not register_hotkey(
                     new_hotkey,
                     lambda: toggle_pause(paused_event, icon, icon_active, icon_paused),
